@@ -12,7 +12,7 @@ function tokenizer(input: string) {
   let current = 0;
 
   // this array is immutable
-  let tokens: Token[] = [];
+  const tokens: Token[] = [];
 
   while (current < input.length) {
     let char = input[current];
