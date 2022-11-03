@@ -4,12 +4,14 @@ import {
 } from "https://deno.land/std@0.161.0/testing/asserts.ts";
 import { describe, it } from "https://deno.land/std@0.161.0/testing/bdd.ts";
 
-type TokenType = "paren" | "number" | "string";
+type TokenType = "paren" | "number" | "string" | "name";
 type TokenValue = "(" | ")" | string;
 type Token = { type: TokenType; value: TokenValue };
 
 function tokenizer(input: string) {
   let current = 0;
+
+  // this array is immutable
   let tokens: Token[] = [];
 
   while (current < input.length) {
@@ -73,6 +75,26 @@ function tokenizer(input: string) {
       continue;
     }
 
+    // `name`: not literal letters
+    const LETTERS = /[a-z]/i;
+    if (LETTERS.test(char)) {
+      let value = "";
+
+      let count = 0;
+      while (LETTERS.test(char)) {
+        value += char;
+        char = input[++current];
+
+        if (count < 3) {
+          count++;
+        }
+        continue;
+      }
+
+      tokens.push({ type: "name", value });
+      continue;
+    }
+
     throw new TypeError("Invalid character: " + char);
   }
   return tokens;
@@ -109,6 +131,15 @@ describe("tokenizer", () => {
       value: "hi",
     };
     assertEquals(tokenizer('"hi"'), [expect]);
+  });
+
+  it("accepts letters as `name`", () => {
+    const expect: Token = {
+      type: "name",
+      value: "add",
+    };
+    // a "not `name` value" is required at the end of string
+    assertEquals(tokenizer("add "), [expect]);
   });
 
   it("throws Error when input includes an invalid character", () => {
