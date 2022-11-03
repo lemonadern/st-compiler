@@ -5,7 +5,7 @@ import {
 import { describe, it } from "https://deno.land/std@0.161.0/testing/bdd.ts";
 import { Token } from "./types.ts";
 
-function tokenizer(input: string) {
+export function tokenizer(input: string): Token[] {
   let current = 0;
 
   // this array is immutable
@@ -137,6 +137,21 @@ describe("tokenizer", () => {
     };
     // a "not `name` value" is required at the end of string
     assertEquals(tokenizer("add "), [expect]);
+  });
+
+  it("accepts '(add 2 (subtract 4 2))'", () => {
+    const expectedTokens: Token[] = [
+      { type: "paren", value: "(" },
+      { type: "name", value: "add" },
+      { type: "number", value: "2" },
+      { type: "paren", value: "(" },
+      { type: "name", value: "subtract" },
+      { type: "number", value: "4" },
+      { type: "number", value: "2" },
+      { type: "paren", value: ")" },
+      { type: "paren", value: ")" },
+    ];
+    assertEquals(tokenizer("(add 2 (subtract 4 2))"), expectedTokens);
   });
 
   it("throws Error when input includes an invalid character", () => {

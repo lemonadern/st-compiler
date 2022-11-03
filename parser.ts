@@ -1,5 +1,8 @@
-import { assertEquals } from "https://deno.land/std@0.161.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.161.0/testing/bdd.ts";
+import {
+  assertEquals,
+  assertThrows,
+} from "https://deno.land/std@0.161.0/testing/asserts.ts";
+import { tokenizer } from "./tokenizer.ts";
 import { Token, TokenValue } from "./types.ts";
 
 type NodeValue = TokenValue;
@@ -23,6 +26,7 @@ function parser(tokens: Token[]): AST {
 
   function walk(): Node {
     let token = tokens[current];
+    console.log("%o", token);
 
     if (token.type === "number") {
       current++;
@@ -48,6 +52,7 @@ function parser(tokens: Token[]): AST {
         name: token.value,
         params: [],
       };
+      console.log("CallExec: %o", token);
       token = tokens[++current];
 
       const { type, value } = token;
@@ -61,7 +66,11 @@ function parser(tokens: Token[]): AST {
       return node;
     }
 
-    throw new TypeError("Cannot recognize the token type:" + token.type);
+    // console.log("%o", token);
+    throw new TypeError(
+      "Cannot recognize the token type: '" + token.type + "' (value: '" +
+        token.value + "')",
+    );
   }
 
   const ast: AST = {
@@ -139,5 +148,43 @@ Deno.test("Just multiple Literal", () => {
     ],
   };
 
+  assertEquals(parser(tokens), expectedAst);
+});
+
+Deno.test("rejects closing parenthesis without opening", () => {
+  const tokens: Token[] = [{ type: "paren", value: ")" }];
+  assertThrows(() => {
+    parser(tokens);
+  }, TypeError);
+});
+
+Deno.test("rejects just name without opening parenthesis", () => {
+  const tokens: Token[] = [{ type: "name", value: "add" }];
+  assertThrows(() => {
+    parser(tokens);
+  }, TypeError);
+});
+
+Deno.test("accepts '(add 2 3)'", () => {
+  const expectedAst: AST = {
+    type: "Program",
+    body: [
+      {
+        type: "CallExpression",
+        name: "add",
+        params: [
+          {
+            type: "NumberLiteral",
+            value: "2",
+          },
+          {
+            type: "NumberLiteral",
+            value: "3",
+          },
+        ],
+      },
+    ],
+  };
+  const tokens = tokenizer("(add 2 3)");
   assertEquals(parser(tokens), expectedAst);
 });
