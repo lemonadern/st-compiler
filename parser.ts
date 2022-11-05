@@ -3,23 +3,7 @@ import {
   assertThrows,
 } from "https://deno.land/std@0.161.0/testing/asserts.ts";
 import { tokenizer } from "./tokenizer.ts";
-import { Token, TokenValue } from "./types.ts";
-
-type NodeValue = TokenValue;
-
-type ExpressionNodeValue = "CallExpression";
-type ExpressionNode = {
-  type: ExpressionNodeValue;
-  name: TokenValue;
-  params: Node[];
-};
-
-type LiteralNodeType = "NumberLiteral" | "StringLiteral";
-type LiteralNode = { type: LiteralNodeType; value: NodeValue };
-
-type Node = LiteralNode | ExpressionNode;
-
-type AST = { type: "Program"; body: Node[] };
+import { AST, ExpressionNode, Node, Token } from "./types.ts";
 
 function parser(tokens: Token[]): AST {
   let current = 0;
