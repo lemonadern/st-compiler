@@ -45,7 +45,8 @@ function parser(tokens: Token[]): AST {
     }
 
     const { type, value } = token;
-    if (type === "paren" && value == "(") {
+    if (type === "paren" && value === "(") {
+      // skip opening parenthesis
       token = tokens[++current];
       const node: ExpressionNode = {
         type: "CallExpression",
@@ -53,10 +54,14 @@ function parser(tokens: Token[]): AST {
         params: [],
       };
       console.log("CallExec: %o", token);
+      // skip `name` token
       token = tokens[++current];
 
-      const { type, value } = token;
-      while ((type !== "paren") || (type === "paren" && value !== ")")) {
+      // tokenが 即値 あるいは opening parenthesis のとき
+      while (
+        (token.type !== "paren") ||
+        (token.type === "paren" && token.value !== ")")
+      ) {
         node.params.push(walk());
         token = tokens[current];
       }
@@ -66,7 +71,6 @@ function parser(tokens: Token[]): AST {
       return node;
     }
 
-    // console.log("%o", token);
     throw new TypeError(
       "Cannot recognize the token type: '" + token.type + "' (value: '" +
         token.value + "')",
@@ -81,6 +85,7 @@ function parser(tokens: Token[]): AST {
   while (current < tokens.length) {
     ast.body.push(walk());
   }
+  console.log("ast: %o", ast);
   return ast;
 }
 
@@ -160,9 +165,13 @@ Deno.test("rejects closing parenthesis without opening", () => {
 
 Deno.test("rejects just name without opening parenthesis", () => {
   const tokens: Token[] = [{ type: "name", value: "add" }];
-  assertThrows(() => {
-    parser(tokens);
-  }, TypeError);
+  assertThrows(
+    () => {
+      parser(tokens);
+    },
+    TypeError,
+    "add",
+  );
 });
 
 Deno.test("accepts '(add 2 3)'", () => {
@@ -186,5 +195,39 @@ Deno.test("accepts '(add 2 3)'", () => {
     ],
   };
   const tokens = tokenizer("(add 2 3)");
+  assertEquals(parser(tokens), expectedAst);
+});
+
+Deno.test("accepts '(add 2 (subtract 4 2))'", () => {
+  const expectedAst: AST = {
+    type: "Program",
+    body: [
+      {
+        type: "CallExpression",
+        name: "add",
+        params: [
+          {
+            type: "NumberLiteral",
+            value: "2",
+          },
+          {
+            type: "CallExpression",
+            name: "subtract",
+            params: [
+              {
+                type: "NumberLiteral",
+                value: "4",
+              },
+              {
+                type: "NumberLiteral",
+                value: "2",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const tokens = tokenizer("(add 2 (subtract 4 2))");
   assertEquals(parser(tokens), expectedAst);
 });
